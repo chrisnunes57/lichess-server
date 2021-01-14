@@ -11,8 +11,5 @@ npm-debug.log
 Dockerfile
 docker-compose.yml
 
-# hide tokens
-config.json
-
 # package-lock breaks heroku somehow
 package-lock.json
