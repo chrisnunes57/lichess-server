@@ -1,6 +1,7 @@
 const fs = require('fs');
 const express = require('express');
 var cors = require('cors');
+const fetch = require('node-fetch');
 const app = express();
 const port = process.env.PORT || 5000;
 const { addListener, sendChallenge } = require("./util.js");
@@ -9,7 +10,7 @@ app.use(cors());
 
 // we make a request to our own server every 5 minutes to prevent heroku from putting the app to sleep
 setInterval(() => {
-  request("https://morning-wildwood-47395.herokuapp.com/challenge");
+  fetch("https://morning-wildwood-47395.herokuapp.com/challenge");
 }, 600000);
 
 // set up a queue of games waiting to be played
