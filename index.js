@@ -7,6 +7,11 @@ const { addListener, sendChallenge } = require("./util.js");
 
 app.use(cors());
 
+// we make a request to our own server every 5 minutes to prevent heroku from putting the app to sleep
+setInterval(() => {
+  request("https://morning-wildwood-47395.herokuapp.com/challenge");
+}, 600000);
+
 // set up a queue of games waiting to be played
 let gameQueue = new Set();
 // set up a queue of challenges that have been declined, so clients can recognize when challenges are declined.
