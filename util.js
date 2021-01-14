@@ -28,12 +28,20 @@ async function addListener(URL, callback) {
 async function sendChallenge () {
     let URL = "https://lichess.org/api/challenge/chrisnunes";
 
-    let response = await fetch(URL, {
+    const response = await fetch(URL, {
         method: "POST",
         headers: {
             "Authorization": "Bearer " + config["token"]
         }
     });
+
+    try {
+        const json = await response.json();
+    } catch (e) {
+        return "Too Many Requests";
+    }   
+
+    return json.challenge.id;
 }
 
 module.exports = { addListener, sendChallenge }

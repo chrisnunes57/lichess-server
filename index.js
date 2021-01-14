@@ -7,19 +7,10 @@ const { addListener, sendChallenge } = require("./util.js");
 
 app.use(cors());
 
-// read existing game data from file
-let rawdata = fs.readFileSync('games.json');
-let games = JSON.parse(rawdata);
-
-games["test"] = "hello, world!";
-backupGameData();
-
 // set up a queue of games waiting to be played
-let gameQueue = [];
-// set up a queue of challenges waiting to be claimed by clients
-let challengeQueue = [];
+let gameQueue = new Set();
 // set up a queue of challenges that have been declined, so clients can recognize when challenges are declined.
-let declinedQueue = [];
+let declinedQueue = new Set();
 
 // start listening for lichess events
 function startEventListener() {
@@ -34,33 +25,18 @@ function handleEvent(rawData) {
   if (data.type === "gameStart") {
     // need to add this new game to gameQueue
     let id = data.game.id;
-    gameQueue.push(id);
+    gameQueue.add(id);
     console.log("new game started with id:" + id);
   } else if (data.type === "gameFinish") {
     // need to remove this finished game from list of active games
     let id = data.game.id;
     console.log("game ended:" + id);
-  } else if (data.type === "challenge") {
-    // new challenge created
-    let id = data.challenge.id;
-    challengeQueue.push(id);
   } else if (data.type === "challengeDeclined") {
     // user (chrisnunes) has rejected the challenge
     let id = data.challenge.id;
-    declinedQueue.push(id);
+    declinedQueue.add(id);
   }
-
-  console.log(data);
-  console.log("challengeQueue: " + challengeQueue);
-  console.log("gameQueue: " + gameQueue);
-  console.log("declinedQueue: " + declinedQueue);
 };
-
-// back up game data 
-function backupGameData() {
-  let data = JSON.stringify(games);
-  fs.writeFileSync("games.json", data);
-}
 
 app.get('/', (req, res) => {
   res.send('Lichess Server for https://chrisnun.es!');
@@ -73,21 +49,32 @@ app.get('/', (req, res) => {
 // 1: 'challengeCreated', sending client the gameID
 // 1: 'challengeDeclined', sending client the gameID
 // 1: 'challengeAccepted', sending client the gameID
-app.get('/challenge', (req, res) => {
+app.get('/challenge', async (req, res) => {
   res.setHeader('Content-Type', 'application/json')
 
   // create new challenge
-  sendChallenge();
+  let challengeID = await sendChallenge();
+  console.log("created new game with id: " + challengeID);
 
-  // we create a challenge variable to store our challenge ID
-  let challengeID = null;
+  let msg = {
+    type: "challengeCreated",
+    gameID: challengeID
+  }
+  res.write(JSON.stringify(msg) + "\n");
+
+  if (challengeID === "Too Many Requests") {
+    res.end();
+    return;
+  }
+
+
   // start checking to see if there are any games to claim
   let interval = setInterval(function () {
 
     // checks if we have a challenge ID, and it is equal to the first game in the game queue
     // if this is the case, we take remove it from the game queue and send a "game started" message
-    if (challengeID !== null && gameQueue.length > 0 && gameQueue[0] === challengeID) {
-      gameQueue.shift();
+    if (challengeID !== null && gameQueue.has(challengeID)) {
+      gameQueue.delete(challengeID);
       clearInterval(interval);
       let msg = {
         type: "challengeAccepted",
@@ -99,23 +86,10 @@ app.get('/challenge', (req, res) => {
       return;
     }
 
-    // checks if we are missing a challenge ID, and there is one available in the challenge Queue
-    if (challengeID === null && challengeQueue.length > 0) {
-      // we claim the challenge id and inform client
-      challengeID = challengeQueue.shift();
-      console.log("client claimed challenge " + challengeID);
-      let msg = {
-        type: "challengeCreated",
-        gameID: challengeID
-      };
-      res.write(JSON.stringify(msg) + "\n");
-      console.log("Challenge " + challengeID + " assigned to this user!");
-    }
-
     // checks if we have a challenge ID, but it has been declined
-    if (challengeID !== null && declinedQueue.length > 0 && declinedQueue[0] === challengeID) {
+    if (challengeID !== null && declinedQueue.has(challengeID)) {
       // remove value from declined queue and terminate
-      declinedQueue.shift();
+      declinedQueue.delete(challengeID);
       clearInterval(interval);
       let msg = {
         type: "challengeDeclined",
