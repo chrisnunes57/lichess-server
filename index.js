@@ -1,7 +1,9 @@
 const fs = require('fs');
-const express = require('express')
-const app = express()
-const port = process.env.PORT || 5000
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 5000;
+
+app.use(cors());
 
 let rawdata = fs.readFileSync('games.json');
 let games = JSON.parse(rawdata);
