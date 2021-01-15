@@ -37,11 +37,10 @@ async function sendChallenge () {
 
     try {
         const json = await response.json();
+        return json.challenge.id;
     } catch (e) {
         return "Too Many Requests";
     }   
-
-    return json.challenge.id;
 }
 
 module.exports = { addListener, sendChallenge }
