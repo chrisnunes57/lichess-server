@@ -10,7 +10,7 @@ app.use(cors());
 
 // we make a request to our own server every 5 minutes to prevent heroku from putting the app to sleep
 setInterval(() => {
-  fetch("https://morning-wildwood-47395.herokuapp.com/challenge");
+  fetch("https://morning-wildwood-47395.herokuapp.com/");
 }, 600000);
 
 // set up a queue of games waiting to be played
