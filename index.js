@@ -28,6 +28,8 @@ function startEventListener() {
 function handleEvent(rawData) {
   let data = JSON.parse(rawData);
 
+  console.log(data);
+
   if (data.type === "gameStart") {
     // need to add this new game to gameQueue
     let id = data.game.id;
